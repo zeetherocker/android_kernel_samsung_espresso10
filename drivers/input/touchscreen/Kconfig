@@ -765,6 +765,10 @@ config TOUCHSCREEN_MELFAS_MMS136
 		To compile this driver as a module, choose M here: the
 		module will be called melfas_ts.
 
+config TOUCHSCREEN_MELFAS_MMS136_DISABLE_PIVOT
+	bool "Disable MELFAS MMS136 Touchscreen Interface Rotation"
+	depends on TOUCHSCREEN_MELFAS_MMS136
+
 config TOUCHSCREEN_SYNAPTICS_S7301
 	tristate "SYNAPTICS S7301 Touchscreen Interface"
 	depends on I2C
