@@ -88,9 +88,17 @@ EXPORT_SYMBOL(cap_netlink_recv);
 int cap_capable(struct task_struct *tsk, const struct cred *cred,
 		struct user_namespace *targ_ns, int cap, int audit)
 {
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
 	if (cap == CAP_NET_RAW && in_egroup_p(AID_NET_RAW))
+#else /* ubuntu touch hack */
+	if (cap == CAP_NET_RAW)
+#endif
 		return 0;
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
 	if (cap == CAP_NET_ADMIN && in_egroup_p(AID_NET_ADMIN))
+#else /* ubuntu touch hack */
+	if (cap == CAP_NET_ADMIN)
+#endif
 		return 0;
 
 	for (;;) {
