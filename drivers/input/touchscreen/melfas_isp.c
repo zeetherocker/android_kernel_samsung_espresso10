@@ -352,3 +352,4 @@ bool isp_updater(const u8 *fw_data, const size_t fw_size,
 
 	return result;
 }
+EXPORT_SYMBOL(isp_updater);

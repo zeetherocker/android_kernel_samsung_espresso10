@@ -105,6 +105,17 @@ struct ts_data {
 #endif
 };
 
+/* Ketut P. Kumajaya, March 2013: fix build as a module, add module parameter */
+/* Changed in: mms136.c, melfas_isp.c, Kconfig, and Makefile */
+
+#ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS136_FORCE_LANDSCAPE
+static bool pivot = false;
+#else
+static bool pivot = true;
+#endif
+module_param(pivot, bool, 0444);
+MODULE_PARM_DESC(pivot, "Set touchscreen orientation in landscape (0) or portrait (1)");
+
 static int ts_read_reg_data(struct ts_data *ts, u8 address, int size, u8 *buf)
 {
 	if (i2c_master_send(ts->client, &address, 1) < 0)
@@ -657,51 +668,6 @@ static void get_y_num(void *device_data)
 	return;
 }
 
-static void get_x_pix(void *device_data)
-{
-	struct ts_data *ts_data = (struct ts_data *)device_data;
-	struct factory_data *data = ts_data->factory_data;
-
-	data->cmd_state = RUNNING;
-
-	set_default_result(data);
-	sprintf(data->cmd_buff, "%d", ts_data->platform_data->x_pixel_size);
-	set_cmd_result(data, data->cmd_buff, strlen(data->cmd_buff));
-
-	data->cmd_state = OK;
-	return;
-}
-
-static void get_y_pix(void *device_data)
-{
-	struct ts_data *ts_data = (struct ts_data *)device_data;
-	struct factory_data *data = ts_data->factory_data;
-
-	data->cmd_state = RUNNING;
-
-	set_default_result(data);
-	sprintf(data->cmd_buff, "%d", ts_data->platform_data->y_pixel_size);
-	set_cmd_result(data, data->cmd_buff, strlen(data->cmd_buff));
-
-	data->cmd_state = OK;
-	return;
-}
-
-static void get_pivot(void *device_data)
-{
-	struct ts_data *ts_data = (struct ts_data *)device_data;
-	struct factory_data *data = ts_data->factory_data;
-
-	data->cmd_state = RUNNING;
-
-	set_default_result(data);
-	sprintf(data->cmd_buff, "%d", ts_data->platform_data->pivot);
-	set_cmd_result(data, data->cmd_buff, strlen(data->cmd_buff));
-
-	data->cmd_state = OK;
-	return;
-}
-
 static void get_reference(void *device_data)
 {
 	struct ts_data *ts_data = (struct ts_data *)device_data;
@@ -975,9 +941,6 @@ struct tsp_cmd tsp_cmds[] = {
 	{TSP_CMD("get_chip_name", get_chip_name),},
 	{TSP_CMD("get_x_num", get_x_num),},
 	{TSP_CMD("get_y_num", get_y_num),},
-	{TSP_CMD("get_x_pix", get_x_pix),},
-	{TSP_CMD("get_y_pix", get_y_pix),},
-	{TSP_CMD("get_pivot", get_pivot),},
 	{TSP_CMD("get_reference", get_reference),},
 	{TSP_CMD("get_cm_abs", get_cm_abs),},
 	{TSP_CMD("get_cm_delta", get_cm_delta),},
@@ -1188,12 +1151,10 @@ static irqreturn_t ts_irq_handler(int irq, void *handle)
 		x = (buf[i + 1] & 0x0F) << 8 | buf[i + 2];
 		y = (buf[i + 1] & 0xF0) << 4 | buf[i + 3];
 
-#if !defined(CONFIG_TOUCHSCREEN_MELFAS_MMS136_DISABLE_PIVOT)
-		if (ts->platform_data->pivot) {
+		if (pivot) {
 			swap(x, y);
 			x = ts->platform_data->x_pixel_size - x;
 		}
-#endif
 
 		if (id < 0 || id >= MELFAS_MAX_TOUCH ||
 		    x < 0 || x > ts->platform_data->x_pixel_size ||
@@ -1319,11 +1280,9 @@ static int __devinit ts_probe(struct i2c_client *client,
 		goto err_input_dev_alloc_failed;
 	}
 
-#if !defined(CONFIG_TOUCHSCREEN_MELFAS_MMS136_DISABLE_PIVOT)
-	if (ts->platform_data->pivot)
+	if (pivot)
 		swap(ts->platform_data->x_pixel_size,
 					ts->platform_data->y_pixel_size);
-#endif
 
 	input_mt_init_slots(ts->input_dev, MELFAS_MAX_TOUCH);
 
