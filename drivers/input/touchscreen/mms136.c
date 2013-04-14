@@ -1151,7 +1151,7 @@ static irqreturn_t ts_irq_handler(int irq, void *handle)
 		x = (buf[i + 1] & 0x0F) << 8 | buf[i + 2];
 		y = (buf[i + 1] & 0xF0) << 4 | buf[i + 3];
 
-		if (pivot) {
+		if (ts->platform_data->pivot) {
 			swap(x, y);
 			x = ts->platform_data->x_pixel_size - x;
 		}
@@ -1280,7 +1280,8 @@ static int __devinit ts_probe(struct i2c_client *client,
 		goto err_input_dev_alloc_failed;
 	}
 
-	if (pivot)
+	ts->platform_data->pivot = pivot;
+	if (ts->platform_data->pivot)
 		swap(ts->platform_data->x_pixel_size,
 					ts->platform_data->y_pixel_size);
 
