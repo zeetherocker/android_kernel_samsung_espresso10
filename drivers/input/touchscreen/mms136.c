@@ -108,13 +108,13 @@ struct ts_data {
 /* Ketut P. Kumajaya, March 2013: fix build as a module, add module parameter */
 /* Changed in: mms136.c, melfas_isp.c, Kconfig, and Makefile */
 
-#ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS136_FORCE_LANDSCAPE
+/* #ifdef CONFIG_TOUCHSCREEN_MELFAS_MMS136_FORCE_LANDSCAPE
 static bool pivot = false;
 #else
 static bool pivot = true;
 #endif
 module_param(pivot, bool, 0444);
-MODULE_PARM_DESC(pivot, "Set touchscreen orientation in landscape (0) or portrait (1)");
+MODULE_PARM_DESC(pivot, "Set touchscreen orientation in landscape (0) or portrait (1)"); */
 
 static int ts_read_reg_data(struct ts_data *ts, u8 address, int size, u8 *buf)
 {
@@ -1098,10 +1098,55 @@ static DEVICE_ATTR(cmd, S_IWUSR | S_IWGRP, NULL, cmd_store);
 static DEVICE_ATTR(cmd_status, S_IRUGO, cmd_status_show, NULL);
 static DEVICE_ATTR(cmd_result, S_IRUGO, cmd_result_show, NULL);
 
+static ssize_t mms136_pivot_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct ts_data *ts = dev_get_drvdata(dev);
+	int count;
+
+	count = sprintf(buf, "%d\n", ts->platform_data->pivot);
+	pr_info("tsp: pivot mode=%d\n", ts->platform_data->pivot);
+
+	return count;
+}
+
+ssize_t mms136_pivot_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t size)
+{
+	struct ts_data *ts = dev_get_drvdata(dev);
+	int pivot;
+
+	if (kstrtoint(buf, 0, &pivot))
+		pr_err("tsp: failed storing pivot value\n");
+
+	if (pivot < 0) {
+		pivot = 0;
+	} else if (pivot > 1) {
+		pivot = 1;
+	}
+
+	if (ts->platform_data->pivot != pivot) {
+		swap(ts->platform_data->x_pixel_size,
+			ts->platform_data->y_pixel_size);
+		input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X, 0,
+			ts->platform_data->x_pixel_size, 0, 0);
+		input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y, 0,
+			ts->platform_data->y_pixel_size, 0, 0);
+		ts->platform_data->pivot = pivot;
+	}
+	pr_info("tsp: pivot mode=%d\n", pivot);
+
+	return size;
+}
+
+static DEVICE_ATTR(pivot, S_IRUGO | S_IWUSR, mms136_pivot_show, mms136_pivot_store);
+
 static struct attribute *touchscreen_attributes[] = {
 	&dev_attr_cmd.attr,
 	&dev_attr_cmd_status.attr,
 	&dev_attr_cmd_result.attr,
+	&dev_attr_pivot.attr,
 	NULL,
 };
 
@@ -1280,7 +1325,7 @@ static int __devinit ts_probe(struct i2c_client *client,
 		goto err_input_dev_alloc_failed;
 	}
 
-	ts->platform_data->pivot = pivot;
+	/* ts->platform_data->pivot = pivot; */
 	if (ts->platform_data->pivot)
 		swap(ts->platform_data->x_pixel_size,
 					ts->platform_data->y_pixel_size);
