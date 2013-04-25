@@ -1655,14 +1655,20 @@ int late_init_android_gadget(int romtype)
 
 	dev->disable_depth = 1;
 #ifdef CONFIG_USB_ANDROID_MTP_LATE_INIT
-	if (!romtype)
+	if (!romtype) {
 		dev->functions = supported3sung_functions;
-	else
+		printk("Late initializing Samsung Android USB\n");
+	}
+	else {
 		dev->functions = supported_functions;
+		printk("Late initializing standard Android USB\n");
+	}
 #elif defined(CONFIG_USB_ANDROID_SAMSUNG_MTP)
 	dev->functions = supported3sung_functions;
+	printk("Initializing Samsung Android USB\n");
 #else
 	dev->functions = supported_functions;
+	printk("Initializing standard Android USB\n");
 #endif
 	INIT_LIST_HEAD(&dev->enabled_functions);
 	INIT_WORK(&dev->work, android_work);
@@ -1717,7 +1723,7 @@ static int __init init(void)
 #elif defined(CONFIG_USB_ANDROID_SAMSUNG_MTP)
 	return late_init_android_gadget(0);
 #else
-	return late_init_android_gadget(3);
+	return late_init_android_gadget(1);
 #endif
 }
 module_init(init);
