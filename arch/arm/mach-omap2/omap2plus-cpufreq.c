@@ -1138,7 +1138,7 @@ static int __init omap_cpufreq_init(void)
 	int ret;
 
 #ifdef CONFIG_OMAP4430_GPU_OVERCLOCK
-	gpu_freq_idx = 1;
+	gpu_freq_idx = 0;
 #endif
 
 	if (cpu_is_omap24xx())
