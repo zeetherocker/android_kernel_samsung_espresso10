@@ -1605,10 +1605,10 @@ void *kmem_cache_alloc(struct kmem_cache *s, gfp_t gfpflags)
 EXPORT_SYMBOL(kmem_cache_alloc);
 
 /* blackhawk: exFAT hack */
-#ifdef CONFIG_SAMSUNG_EXFAT
+#if defined(CONFIG_TRACING) && defined(CONFIG_SAMSUNG_EXFAT)
 void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
 {
-	void *ret = slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_);
+	void *ret = __kmem_cache_alloc(s, gfpflags, _RET_IP_);
 	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
 	return ret;
 }
