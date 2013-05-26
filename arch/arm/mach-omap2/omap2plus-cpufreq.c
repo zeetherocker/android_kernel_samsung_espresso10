@@ -174,11 +174,14 @@ static int omap_cpufreq_policy_notifier_call(struct notifier_block *this,
 				unsigned long code, void *data)
 {
 	/* Ketut P. Kumajaya: follow scaling_max_freq rule */
-	/* struct cpufreq_policy *policy = data; */
+#if !defined(CONFIG_OMAP4430_CPU_OVERCLOCK)
+	struct cpufreq_policy *policy = data;
+#endif
 
 	switch (code) {
 	case CPUFREQ_ADJUST:
-		/* if ((!strnicmp(policy->governor->name,
+#if !defined(CONFIG_OMAP4430_CPU_OVERCLOCK)
+		if ((!strnicmp(policy->governor->name,
 					"powersave", CPUFREQ_NAME_LEN))
 				|| (!strnicmp(policy->governor->name,
 					"performance", CPUFREQ_NAME_LEN))
@@ -195,9 +198,11 @@ static int omap_cpufreq_policy_notifier_call(struct notifier_block *this,
 		} else {
 			cpufreq_lock_type[MAX_LIMIT].disable_lock = false;
 			cpufreq_lock_type[MIN_LIMIT].disable_lock = false;
-		} */
+		}
+#else
 		cpufreq_lock_type[MIN_LIMIT].disable_lock = true;
 		cpufreq_lock_type[MAX_LIMIT].disable_lock = true;
+#endif
 	case CPUFREQ_INCOMPATIBLE:
 	case CPUFREQ_NOTIFY:
 	default:
