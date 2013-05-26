@@ -1022,9 +1022,7 @@ static int check_version(Elf_Shdr *sechdrs,
 	unsigned int i, num_versions;
 	struct modversion_info *versions;
 
-#ifdef CONFIG_SAMSUNG_EXFAT
 	if(!strncmp("exfat_", mod->name, 6)) return 1;
-#endif
 	/* Exporting module didn't supply crcs?  OK, we're already tainted. */
 	if (!crc)
 		return 1;
