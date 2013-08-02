@@ -1,11 +1,9 @@
-config XVMALLOC
-	bool
-	default n
-
 config ZRAM
 	tristate "Compressed RAM block device support"
-	depends on BLOCK && SYSFS
-	select XVMALLOC
+	# arch dependency is because of the use of local_unmap_kernel_range
+	# functions
+	depends on BLOCK && SYSFS && (ARM || MIPS || SUPERH)
+	select ZSMALLOC
 	select LZO_COMPRESS
 	select LZO_DECOMPRESS
 	default n
@@ -28,10 +26,3 @@ config ZRAM_DEBUG
 	help
 	  This option adds additional debugging code to the compressed
 	  RAM block device driver.
-
-config ZRAM_FOR_ANDROID
-	bool "Optimize zram behavior for android"
-	depends on ZRAM && ANDROID
-	default n
-	help
-	  This option enables modified zram behavior optimized for android
