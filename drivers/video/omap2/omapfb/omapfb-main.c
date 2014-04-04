@@ -50,6 +50,13 @@ static int def_vrfb;
 static int def_rotate;
 static int def_mirror;
 
+#ifdef CONFIG_FB_OMAP2_VSYNC_SEND_UEVENTS
+/* 0 - vsync event disable
+ * 1 - vsync event enable
+ */
+static int i_event_mode = 1;
+#endif
+
 /* Max 4 framebuffers assumed : FB-ix-W-H */
 #define MAX_FB_COUNT	4
 #define ELEMENT_COUNT	3
@@ -2400,20 +2407,58 @@ static ssize_t omapfb_vsync_time(struct device *dev,
 static DEVICE_ATTR(vsync_time, S_IRUGO, omapfb_vsync_time, NULL);
 #endif
 
+#ifdef CONFIG_FB_OMAP2_VSYNC_SEND_UEVENTS
+static ssize_t omapfb_vsync_mode_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int size;
+
+	size = sprintf(buf, "%d\n", i_event_mode);
+
+	return size;
+}
+
+ssize_t omapfb_vsync_mode_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	if (kstrtoint(buf, 0, &i_event_mode))
+		pr_err("omapfb: failed storing vsync_mode value\n");
+
+	if (i_event_mode < 0) {
+		i_event_mode = 0;
+	} else if (i_event_mode > 1) {
+		i_event_mode = 1;
+	}
+
+	return size;
+}
+static DEVICE_ATTR(vsync_mode, S_IRUGO | S_IWUSR, omapfb_vsync_mode_show,
+		   omapfb_vsync_mode_store);
+#endif
+
 static void omapfb_send_vsync_work(struct work_struct *work)
 {
 	struct omapfb2_device *fbdev =
 		container_of(work, typeof(*fbdev), vsync_work);
 
 #ifdef CONFIG_FB_OMAP2_VSYNC_SEND_UEVENTS
-	char buf[64];
-	char *envp[2];
+	/* Ketut P. Kumajaya: 
+	 * Mute "Ignoring duplicate VSYNC event from HWC" message on CM 11.0
+	 * echo 0 > /sys/devices/platform/omapfb/vsync_mode 
+	 *  
+	 * Stock 4.2.2 need kernel VSYNC event
+	 * echo 1 > /sys/devices/platform/omapfb/vsync_mode
+	 */
+	if ((i_event_mode & 0x1) == 1) {
+		char buf[64];
+		char *envp[2];
 
-	snprintf(buf, sizeof(buf), "VSYNC=%llu",
-		ktime_to_ns(fbdev->vsync_timestamp));
-	envp[0] = buf;
-	envp[1] = NULL;
-	kobject_uevent_env(&fbdev->dev->kobj, KOBJ_CHANGE, envp);
+		snprintf(buf, sizeof(buf), "VSYNC=%llu",
+			ktime_to_ns(fbdev->vsync_timestamp));
+		envp[0] = buf;
+		envp[1] = NULL;
+		kobject_uevent_env(&fbdev->dev->kobj, KOBJ_CHANGE, envp);
+	}
 #endif
 
 #ifdef CONFIG_FB_OMAP2_VSYNC_SYSFS
@@ -2580,6 +2625,14 @@ static int omapfb_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_FB_OMAP2_VSYNC_SYSFS
 	r = device_create_file(fbdev->dev, &dev_attr_vsync_time);
+	if (r) {
+		dev_err(fbdev->dev, "failed to add sysfs entries\n");
+		goto cleanup;
+	}
+#endif
+
+#ifdef CONFIG_FB_OMAP2_VSYNC_SEND_UEVENTS
+	r = device_create_file(fbdev->dev, &dev_attr_vsync_mode);
 	if (r) {
 		dev_err(fbdev->dev, "failed to add sysfs entries\n");
 		goto cleanup;
