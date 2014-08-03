@@ -1047,8 +1047,8 @@ int __init omap4_opp_init(void)
 
 #ifdef CONFIG_OMAP4430_CPU_OVERCLOCK
 	omap4_opp_enable("mpu", 1200000000);
-	omap4_opp_enable("mpu", 1350000000);
 	/*
+	omap4_opp_enable("mpu", 1350000000);
 	omap4_opp_enable("mpu", 1420000000);
 	omap4_opp_enable("mpu", 1480000000);
 	omap4_opp_enable("mpu", 1520000000);
